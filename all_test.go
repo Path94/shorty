@@ -40,10 +40,9 @@ func TestID(t *testing.T) {
 
 func TestShorty(t *testing.T) {
 	var (
-		ms, _ = NewMemStore()
-		s     = New(ms, 1)
-		ids   []ID
-		urls  = []string{"https://google.com", "https://path94.com", "https://meteora.co"}
+		s    = New(NewMemStore(), 1)
+		ids  []ID
+		urls = []string{"https://google.com", "https://path94.com", "https://meteora.co"}
 	)
 
 	for _, url := range urls {

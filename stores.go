@@ -100,10 +100,10 @@ type memStore struct {
 }
 
 // NewMemStore returns a new in-memory store.
-func NewMemStore() (Store, error) {
+func NewMemStore() Store {
 	return &memStore{
 		s: map[string]Data{},
-	}, nil
+	}
 }
 
 var _ Store = (*memStore)(nil)
