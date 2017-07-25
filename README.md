@@ -1,5 +1,4 @@
-# Shorty is an url shortner
-----
+# Shorty is an URL shortner with unique ids.
 
 ## Example Usage:
 ```
@@ -16,6 +15,15 @@ check(err)
 store, err := shorty.NewBoltStore(db)
 check(err)
 s, err := short.New(store, 2)
+check(err)
+id, err := s.GenerateID("http://google.com")
+check(err)
+
+// on machine N
+
+store, err := shorty.NewBoltStore(db)
+check(err)
+s, err := short.New(store, N)
 check(err)
 id, err := s.GenerateID("http://google.com")
 check(err)
