@@ -1,5 +1,10 @@
 # Shorty is an URL shortner with unique ids.
 
+## Theoretical limit:
+`math.MaxUint32` ids per second per machine up to year 2059.
+
+---
+
 ## Example Usage:
 ```
 // on machine 1

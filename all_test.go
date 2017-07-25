@@ -7,7 +7,7 @@ import (
 )
 
 func TestID(t *testing.T) {
-	id := NewID(math.MaxUint32, math.MaxInt64, math.MaxUint32)
+	id := NewID(math.MaxUint32, math.MaxInt64-BaseTS, math.MaxUint32)
 	t.Logf("%#+v: %s", id, id)
 	nid, _ := IDFromString(id.String())
 	if nid != id {
@@ -36,6 +36,8 @@ func TestID(t *testing.T) {
 	if jt.I1 != id || *jt.I2 != id {
 		t.Fatalf("%s (%#+v) != %s (%#+v)", id, id, nid, nid)
 	}
+
+	t.Log(id.Time())
 }
 
 func TestShorty(t *testing.T) {
