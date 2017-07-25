@@ -57,7 +57,8 @@ func IDFromString(id string) (ID, error) {
 
 // NewID returns a new ID with the spcified machine ID, timestamp and counter.
 // TS must be > BaseTS.
-// Example: id := NewID(0xB00F, time.Now().Unix(), 1)
+//
+// Example: id := NewID(0xB00F - 4, time.Now().Unix(), 1)
 func NewID(machineID uint32, ts int64, counter uint32) ID {
 	return ID{
 		ts:        uint32(ts - BaseTS),
