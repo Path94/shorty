@@ -48,6 +48,7 @@ func (s *Shorty) GetURL(id string) string {
 	return ""
 }
 
+// ForEach loops over all the stored urls.
 func (s *Shorty) ForEach(fn func(d *Data) error) error {
 	return s.s.ForEach(func(id string, v *Data) error {
 		return fn(v)
