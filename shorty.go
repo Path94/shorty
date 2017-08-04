@@ -21,10 +21,9 @@ func New(store Store, machineID uint32) *Shorty {
 }
 
 // GenerateID generates a unique id for the provided url.
-func (s *Shorty) GenerateID(url string) (ID, error) {
-	_, err := U.Parse(url)
-	if err != nil {
-		return ID{}, err
+func (s *Shorty) GenerateID(url string) (id ID, err error) {
+	if _, err = U.Parse(url); err != nil {
+		return
 	}
 	d := &Data{URL: url}
 	err = s.s.Put(s.genID, d)
