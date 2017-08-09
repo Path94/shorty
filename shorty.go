@@ -1,6 +1,7 @@
 package shorty
 
 import (
+	"log"
 	U "net/url"
 	"time"
 )
@@ -18,29 +19,40 @@ func New(store Store, machineID uint32) *Shorty {
 		s:         store,
 		machineID: machineID,
 	}
-	go s.cleanup()
+	go s.purgeLoop()
 	return s
 }
 
-func (s *Shorty) cleanup() {
+func (s *Shorty) purgeLoop() {
 	for {
-		var (
-			now     = time.Now()
-			expired []string
-		)
-		if s.s.ForEach(func(id string, v *Data) error {
-			if v.Expired(now) {
-				expired = append(expired, id)
-			}
-			return nil
-		}) != nil {
+		if _, err := s.PurgeExpired(); err != nil {
+			log.Println(err)
 			break
-		}
-		if len(expired) > 0 {
-			s.s.Delete(expired...)
 		}
 		time.Sleep(time.Hour)
 	}
+}
+
+// PurgeExpired purges all expired IDs and returns the number or an error.
+func (s *Shorty) PurgeExpired() (int, error) {
+	var (
+		now     = time.Now()
+		expired []string
+	)
+	if err := s.s.ForEach(func(id string, v *Data) error {
+		if v.Expired(now) {
+			expired = append(expired, id)
+		}
+		return nil
+	}); err != nil {
+		return 0, err
+	}
+	if len(expired) > 0 {
+		if err := s.s.Delete(expired...); err != nil {
+			return 0, err
+		}
+	}
+	return len(expired), nil
 }
 
 // GenerateID generates a unique id for the provided url.

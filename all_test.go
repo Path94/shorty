@@ -81,9 +81,15 @@ func TestExpiry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	time.Sleep(time.Second)
-	go s.cleanup() // this leaks but it's fine for the test
-	time.Sleep(time.Second / 2)
+
+	n, err := s.PurgeExpired()
+
+	if n != 1 || err != nil {
+		t.Fatalf("unexpected: %d, %v", n, err)
+	}
+
 	if url := s.GetURL(id.String()); url != "" {
 		t.Fatalf("expected the url to be deleted, got %s", url)
 	}
