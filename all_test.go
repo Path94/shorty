@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math"
 	"testing"
+	"time"
 )
 
 func TestID(t *testing.T) {
@@ -65,7 +66,25 @@ func TestShorty(t *testing.T) {
 		if d.URL != urls[i] {
 			t.Fatalf("expected %s, got %s", urls[i], d.URL)
 		}
+		if d.ID != ids[i] {
+			t.Fatalf("expected %s, got %s", urls[i], d.URL)
+		}
 		return nil
 	})
 
+}
+
+func TestExpiry(t *testing.T) {
+	var s Shorty
+	s.s = NewMemStore() // have to do it this way so the auto clean up doesn't start
+	id, err := s.GenerateTimedID("http://google.com", time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(time.Second)
+	go s.cleanup() // this leaks but it's fine for the test
+	time.Sleep(time.Second / 2)
+	if url := s.GetURL(id.String()); url != "" {
+		t.Fatalf("expected the url to be deleted, got %s", url)
+	}
 }

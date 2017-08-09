@@ -26,7 +26,7 @@ type Store interface {
 	Put(genIDFn func(counter uint32) ID, value *Data) error
 
 	// Delete deletes the specific id from the store.
-	Delete(id string) error
+	Delete(ids ...string) error
 
 	// ForEach loops over all the valid ids in the store, returning an error will break early.
 	ForEach(fn func(id string, v *Data) error) error
@@ -70,10 +70,15 @@ func (bs *boltStore) Put(genIDFn func(counter uint32) ID, value *Data) error {
 	})
 }
 
-func (bs *boltStore) Delete(id string) error {
+func (bs *boltStore) Delete(ids ...string) error {
 	return bs.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucketKey)
-		return b.Delete([]byte(id))
+		for _, id := range ids {
+			if err := b.Delete([]byte(id)); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 
@@ -92,7 +97,7 @@ func (bs *boltStore) ForEach(fn func(id string, value *Data) error) error {
 	})
 }
 
-// boltStore implements a store based on bolt.
+// memStore implements a store using map[string]interface{}
 type memStore struct {
 	s       map[string]Data
 	counter uint32
@@ -129,9 +134,11 @@ func (ms *memStore) Put(genIDFn func(counter uint32) ID, value *Data) error {
 	return nil
 }
 
-func (ms *memStore) Delete(id string) error {
+func (ms *memStore) Delete(ids ...string) error {
 	ms.mux.Lock()
-	delete(ms.s, id)
+	for _, id := range ids {
+		delete(ms.s, id)
+	}
 	ms.mux.Unlock()
 	return nil
 }
