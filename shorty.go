@@ -57,17 +57,20 @@ func (s *Shorty) PurgeExpired() (int, error) {
 
 // GenerateID generates a unique id for the provided url.
 func (s *Shorty) GenerateID(url string) (id ID, err error) {
-	return s.GenerateTimedID(url, 0)
+	return s.GenerateTimedID(url, -1)
 }
 
 // GenerateTimedID generates a unique id for the provided url, the id gets deleted after maxAge.
+// if maxAge <= 0, it's ignored.
 func (s *Shorty) GenerateTimedID(url string, maxAge time.Duration) (id ID, err error) {
 	if _, err = U.Parse(url); err != nil {
 		return
 	}
 	d := &Data{
-		URL:    url,
-		MaxAge: maxAge,
+		URL: url,
+	}
+	if maxAge > 0 {
+		d.MaxAge = maxAge
 	}
 	err = s.s.Put(s.genID, d)
 	return d.ID, err
@@ -110,7 +113,7 @@ type Data struct {
 }
 
 func (d *Data) Expired(t time.Time) bool {
-	if d.MaxAge == 0 {
+	if d.MaxAge < 1 {
 		return false
 	}
 	return t.After(d.ID.Time().Add(d.MaxAge))
