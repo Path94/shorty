@@ -1,19 +1,10 @@
 package shorty
 
 import (
-	"encoding/binary"
-	"encoding/json"
-	"fmt"
 	"sort"
 	"sync"
 
-	"github.com/boltdb/bolt"
-)
-
-var (
-	bucketKey  = []byte("shorty")
-	counterKey = []byte("_counter_")
-	be         = binary.BigEndian
+	"github.com/missionMeteora/toolkit/errors"
 )
 
 // Store represents a simple interface for storing and loading shorty's data
@@ -30,71 +21,9 @@ type Store interface {
 
 	// ForEach loops over all the valid ids in the store, returning an error will break early.
 	ForEach(fn func(id string, v *Data) error) error
-}
 
-type boltStore struct {
-	db *bolt.DB
-}
-
-// NewBoltStore returns a new bolt-based store with the specified bolt.DB.
-func NewBoltStore(db *bolt.DB) (Store, error) {
-	if err := db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(bucketKey)
-		return err
-	}); err != nil {
-		return nil, err
-	}
-	return &boltStore{db}, nil
-}
-
-var _ Store = (*boltStore)(nil)
-
-func (bs *boltStore) Get(id string) (*Data, error) {
-	var d Data
-	if err := bs.db.View(func(tx *bolt.Tx) error {
-		v := tx.Bucket(bucketKey).Get([]byte(id))
-		return json.Unmarshal(v, &d)
-	}); err != nil {
-		return nil, err
-	}
-	return &d, nil
-}
-
-func (bs *boltStore) Put(genIDFn func(counter uint32) ID, value *Data) error {
-	return bs.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bucketKey)
-		if !value.ID.Valid() {
-			value.ID = genIDFn(incCounter(b))
-		}
-		return putJSON(b, value.ID.String(), value)
-	})
-}
-
-func (bs *boltStore) Delete(ids ...string) error {
-	return bs.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bucketKey)
-		for _, id := range ids {
-			if err := b.Delete([]byte(id)); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-func (bs *boltStore) ForEach(fn func(id string, value *Data) error) error {
-	return bs.db.View(func(tx *bolt.Tx) error {
-		return tx.Bucket(bucketKey).ForEach(func(k []byte, v []byte) error {
-			if k[0] == '_' {
-				return nil
-			}
-			var d Data
-			if err := json.Unmarshal(v, &d); err != nil {
-				return fmt.Errorf("error unmarshalling %q (%q): %v", k, v, err)
-			}
-			return fn(string(k), &d)
-		})
-	})
+	// Close closes the underlying store if applicable.
+	Close() error
 }
 
 // memStore implements a store using map[string]interface{}
@@ -163,20 +92,12 @@ func (ms *memStore) ForEach(fn func(id string, value *Data) error) error {
 	return nil
 }
 
-func putJSON(b *bolt.Bucket, key string, v interface{}) error {
-	j, err := json.Marshal(v)
-	if err != nil {
-		return err
+func (ms *memStore) Close() error {
+	ms.mux.Lock()
+	defer ms.mux.Unlock()
+	if ms.s == nil {
+		return errors.ErrIsClosed
 	}
-	return b.Put([]byte(key), j)
-}
-
-func incCounter(b *bolt.Bucket) (cnt uint32) {
-	if v := b.Get(counterKey); len(v) > 7 {
-		cnt = be.Uint32(v)
-	}
-	var buf [4]byte
-	be.PutUint32(buf[:], cnt+1)
-	b.Put(counterKey, buf[:])
-	return
+	ms.s = nil
+	return nil
 }
