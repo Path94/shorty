@@ -1,7 +1,6 @@
 package shorty
 
 import (
-	"log"
 	U "net/url"
 	"time"
 )
@@ -26,7 +25,6 @@ func New(store Store, machineID uint32) *Shorty {
 func (s *Shorty) purgeLoop() {
 	for {
 		if _, err := s.PurgeExpired(); err != nil {
-			log.Println(err)
 			break
 		}
 		time.Sleep(time.Hour)
@@ -117,4 +115,15 @@ func (d *Data) Expired(t time.Time) bool {
 		return false
 	}
 	return t.After(d.ID.Time().Add(d.MaxAge))
+}
+
+func (d *Data) Dup() *Data {
+	cp := *d
+	if len(d.Meta) > 0 {
+		cp.Meta = make(map[string]interface{}, len(d.Meta))
+		for k, v := range d.Meta {
+			cp.Meta[k] = v
+		}
+	}
+	return &cp
 }

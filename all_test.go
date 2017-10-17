@@ -1,25 +1,31 @@
-package shorty
+package shorty_test
 
 import (
 	"encoding/json"
+	"log"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/PathDNA/shorty"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile)
+}
 func TestID(t *testing.T) {
-	id := NewID(math.MaxUint32, math.MaxInt64-BaseTS, math.MaxUint32)
+	id := shorty.NewID(math.MaxUint32, math.MaxInt64-shorty.BaseTS, math.MaxUint32)
 	t.Logf("%#+v: %s", id, id)
-	nid, _ := IDFromString(id.String())
+	nid, _ := shorty.IDFromString(id.String())
 	if nid != id {
 		t.Fatalf("%s (%#+v) != %s (%#+v)", id, id, nid, nid)
 	}
 
 	var jt struct {
-		I1 ID
-		I2 *ID
-		I3 *ID
-		I4 ID
+		I1 shorty.ID
+		I2 *shorty.ID
+		I3 *shorty.ID
+		I4 shorty.ID
 	}
 
 	jt.I1, jt.I2 = id, &id
@@ -29,7 +35,7 @@ func TestID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	jt.I1, jt.I2 = ID{}, nil
+	jt.I1, jt.I2 = shorty.ID{}, nil
 
 	if err := json.Unmarshal(j, &jt); err != nil {
 		t.Fatal(err)
@@ -43,8 +49,8 @@ func TestID(t *testing.T) {
 
 func TestShorty(t *testing.T) {
 	var (
-		s    = New(NewMemStore(), 1)
-		ids  []ID
+		s    = shorty.New(shorty.NewMemStore(), 1)
+		ids  []shorty.ID
 		urls = []string{"https://google.com", "https://path94.com", "https://meteora.co"}
 	)
 
@@ -57,7 +63,7 @@ func TestShorty(t *testing.T) {
 		t.Logf("%s: %s", id, url)
 	}
 
-	s.ForEach(func(d *Data) error {
+	s.ForEach(func(d *shorty.Data) error {
 		i := d.ID.Counter()
 		if int(i) > len(urls) {
 			t.Fatalf("i > len(urls): %d %v", i, d)
@@ -75,8 +81,7 @@ func TestShorty(t *testing.T) {
 }
 
 func TestExpiry(t *testing.T) {
-	var s Shorty
-	s.s = NewMemStore() // have to do it this way so the auto clean up doesn't start
+	s := shorty.New(shorty.NewMemStore(), 1)
 	id, err := s.GenerateTimedID("http://google.com", time.Second)
 	if err != nil {
 		t.Fatal(err)
